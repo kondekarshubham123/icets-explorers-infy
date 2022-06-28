@@ -2,7 +2,7 @@
     "profile":"prod",
     "version": "0.0.1",
     "default":{
-        "port": "9091"
+        "port": "8080"
     },
     "prod":{
 

@@ -11,7 +11,7 @@ manager = typer.Typer()
 def run():
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= os.path.join(basedir,"configs","dev-racer-354316-188df6515822.json")
     port = Config.get_value('port')
-    uvicorn.run("manage:fast_app",host="0.0.0.0",port=int(port),use_colors=True)
+    uvicorn.run("manage:fast_app",host="0.0.0.0",port=os.environ.get("PORT", int(port)),use_colors=True)
 
 if __name__ == "__main__":
     manager()
