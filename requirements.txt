@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+typer
+google-api-python-client
+google-cloud-language
+grpcio
