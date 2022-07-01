@@ -1,4 +1,6 @@
 import os
+import uuid
+from google.cloud import dialogflow
 from flask import  Flask
 from google.cloud import language_v1
 from flask_restplus import Resource, Api, reqparse
@@ -14,6 +16,7 @@ api = Api(app,
           description="Google hackthon")
 
 ns = api.namespace('Google NLP APIs',path="/api")
+ng = api.namespace("Dialogflow",path="/api")
 
 parser = reqparse.RequestParser()
 parser.add_argument('Sentence', type=str, required=True,
@@ -25,6 +28,7 @@ CLASSIFY_TEXT = "Classify Text"
 ANALYZE_ENTITY_SENTIMENT = "Analyze Entity Sentiment"
 SENTIMENT_ANALYSIS = "Sentiment Analysis"
 ENTITY_ANALYSIS = "Entity Analysis"
+IDENTIFY_INTENT = "Identify Intent"
 
 
 
@@ -189,7 +193,44 @@ class AnalyseEntitySentiment(Resource):
         return response_body
 
 
+@ng.route('/identifyIntent')
+@ng.expect(parser)
+class IdentifyIntent(Resource):
+    def post(self):
+
+        args = parser.parse_args()
+        text = args['Sentence']
+        language_code = args['language'] or None
+        
+        project_id = "gcms-oht28999u9-2022"
+        session_id = uuid.uuid4()
+
+        session_client = dialogflow.SessionsClient()
+        session = session_client.session_path(project_id, session_id)
+
+        text_input = dialogflow.TextInput(text=text, language_code=language_code)
+
+        query_input = dialogflow.QueryInput(text=text_input)
+
+        response = session_client.detect_intent(
+            request={"session": session, "query_input": query_input}
+        )
+
+        response_body = {
+            IDENTIFY_INTENT: {
+                "Query text":response.query_result.query_text,
+                "Detected intent":response.query_result.intent.display_name,
+                "confidence":response.query_result.intent_detection_confidence,
+                "Fulfillment text":response.query_result.fulfillment_text
+            }
+        }
+
+        return response_body
+
+
+
+
 
 if __name__ == "__main__":
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= os.path.join("dev-racer-354316-304665e54afb.json")
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]= os.path.join("gcms-oht28999u9-2022-d6a3ab347605.json")
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
