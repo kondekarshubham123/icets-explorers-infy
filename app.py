@@ -1,7 +1,7 @@
 import os
 import uuid
 from google.cloud import dialogflow
-from flask import  Flask
+from flask import  Flask, make_response
 from google.cloud import language_v1
 from flask_restplus import Resource, Api, reqparse
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -31,6 +31,9 @@ ENTITY_ANALYSIS = "Entity Analysis"
 IDENTIFY_INTENT = "Identify Intent"
 
 
+
+CE_SOURCE = "knative/eventing/samples/hello-world"
+CE_TYPE = "dev.knative.samples.hifromknative"
 
 @ns.route('/analyseSentiment')
 @ns.expect(parser)
@@ -64,7 +67,14 @@ class AnalyseSentiment(Resource):
         for sentence in response.sentences:
             response_body[SENTIMENT_ANALYSIS][text_content] = {
                 "magnitude": sentence.sentiment.magnitude, "score": sentence.sentiment.score}
-        return response_body
+        
+        response = make_response(response_body)
+        response.headers["Ce-Id"] = str(uuid.uuid4())
+        response.headers["Ce-specversion"] = "0.3"
+        response.headers["Ce-Source"] = CE_SOURCE
+        response.headers["Ce-Type"] = CE_TYPE
+        
+        return response 
 
 
 @ns.route('/analyseEntities')
@@ -106,6 +116,13 @@ class AnalyseEntities(Resource):
                     "begin_offset": mention.text.begin_offset}
             response_body[ENTITY_ANALYSIS][text_content]["mentions"] = mentions
             response_body[ENTITY_ANALYSIS][text_content]["language"] = language
+
+        response = make_response(response_body)
+        response.headers["Ce-Id"] = str(uuid.uuid4())
+        response.headers["Ce-specversion"] = "0.3"
+        response.headers["Ce-Source"] = CE_SOURCE
+        response.headers["Ce-Type"] = CE_TYPE
+
         return response_body
 
 
@@ -144,6 +161,14 @@ class ClassifyText(Resource):
                 "Category name": category.name,
                 "Confidence": category.confidence
             }
+
+
+        response = make_response(response_body)
+        response.headers["Ce-Id"] = str(uuid.uuid4())
+        response.headers["Ce-specversion"] = "0.3"
+        response.headers["Ce-Source"] = CE_SOURCE
+        response.headers["Ce-Type"] = CE_TYPE
+
         return response_body
 
 @ns.route('/analyseEntitySentiment')
@@ -190,6 +215,13 @@ class AnalyseEntitySentiment(Resource):
                 },
                 "language": response.language
             }
+
+        response = make_response(response_body)
+        response.headers["Ce-Id"] = str(uuid.uuid4())
+        response.headers["Ce-specversion"] = "0.3"
+        response.headers["Ce-Source"] = CE_SOURCE
+        response.headers["Ce-Type"] = CE_TYPE
+
         return response_body
 
 
@@ -224,6 +256,12 @@ class IdentifyIntent(Resource):
                 "Fulfillment text":response.query_result.fulfillment_text
             }
         }
+
+        response = make_response(response_body)
+        response.headers["Ce-Id"] = str(uuid.uuid4())
+        response.headers["Ce-specversion"] = "0.3"
+        response.headers["Ce-Source"] = CE_SOURCE
+        response.headers["Ce-Type"] = CE_TYPE
 
         return response_body
 
