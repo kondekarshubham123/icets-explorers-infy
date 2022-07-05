@@ -8,3 +8,5 @@ google-api-python-client
 google-cloud-language
 grpcio
 google-cloud-dialogflow
+ibm-watson
+ibm_cloud_sdk_core
