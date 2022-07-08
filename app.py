@@ -1,3 +1,4 @@
+import json
 import os
 from flask import  Flask
 from flask_restplus import Resource, Api, reqparse
@@ -19,6 +20,7 @@ api = Api(app,
 ns = api.namespace('Google NLP APIs',path="/api")
 ng = api.namespace("Dialogflow",path="/api")
 nw = api.namespace("IBM Watson",path="/api")
+np = api.namespace("Call Analytics",path="/api")
 
 parser = reqparse.RequestParser()
 parser.add_argument('Sentence', type=str, required=True,
@@ -31,6 +33,10 @@ nwparser.add_argument('Sentence', type=str, required=True,
                     help='sentence cannot be blank')
 nwparser.add_argument('target', type=lambda x:x.split(","), help='target keyword separated by comma')
 
+
+npparser = reqparse.RequestParser()
+npparser.add_argument('call_transcript', type=lambda x: json.loads(x), required=True,
+                    help='Call transcript cannot be blank')
 
 @ns.route('/analyseSentiment')
 @ns.expect(parser)
@@ -106,6 +112,17 @@ class identifyEmotions(Resource):
 
         return response
 
+@np.route('/callAnalytics')
+@np.expect(npparser)
+class CallAnalytics(Resource):
+    def post(self):
+        
+        args = npparser.parse_args()
+        
+        response_body = api_wrapper.call_analytics_wrapper(args)
+        response = api_wrapper.knative_enventing_wrapper(response_body)
+
+        return response
 
 if __name__ == "__main__":
     

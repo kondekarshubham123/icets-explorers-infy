@@ -199,6 +199,10 @@ class api_wrapper(object):
             features=Features(emotion=EmotionOptions(targets=args["target"]))).get_result()
 
         return response
+    
+    @staticmethod
+    def call_analytics_wrapper(args):
+        return args
 
     @staticmethod
     def knative_enventing_wrapper(response_body):
