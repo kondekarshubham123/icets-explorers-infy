@@ -20,10 +20,11 @@ api = Api(app,
 ns = api.namespace('Google NLP APIs',path="/api")
 ng = api.namespace("Dialogflow",path="/api")
 nw = api.namespace("IBM Watson",path="/api")
+ne = api.namespace("Elasticsearch",path="/api")
 
 parser = reqparse.RequestParser()
 parser.add_argument('conversation', type=lambda x:json.loads(x), required=True,
-                    help='sentence cannot be blank')
+                    help='conversation cannot be blank')
 parser.add_argument('language', type=str,default=DEFAULTLANGUAGE, help='sentence language')
 
 
@@ -32,6 +33,9 @@ nwparser.add_argument('conversation', type=lambda x:json.loads(x), required=True
                     help='conversation cannot be blank')
 nwparser.add_argument('target', type=lambda x:x.split(","), help='target keyword separated by comma')
 
+
+neparser = reqparse.RequestParser()
+neparser.add_argument("conversation", type=lambda x:json.loads(x), required=True)
 
 @ns.route('/analyseSentiment')
 @ns.expect(parser)
@@ -46,8 +50,8 @@ class AnalyseSentiment(Resource):
         return response
 
 
-@ns.route('/analyseEntities')
-@ns.expect(parser)
+# @ns.route('/analyseEntities')
+# @ns.expect(parser)
 class AnalyseEntities(Resource):
     def post(self):
 
@@ -71,8 +75,8 @@ class ClassifyText(Resource):
         
         return response
 
-@ns.route('/analyseEntitySentiment')
-@ns.expect(parser)
+# @ns.route('/analyseEntitySentiment')
+# @ns.expect(parser)
 class AnalyseEntitySentiment(Resource):
     def post(self):
 
@@ -107,10 +111,22 @@ class identifyEmotions(Resource):
 
         return response
 
+@ne.route("/esCreate")
+@ne.expect(neparser)
+class elasticSearchCreate(Resource):
+    def post(self):
+        args = nwparser.parse_args()
+
+        response_body = api_wrapper.elastic_search_wrapper(args)
+        response = api_wrapper.knative_enventing_wrapper(response_body)
+
+        return response
+
 
 if __name__ == "__main__":
     
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join("certs","gcp","gcms-oht28999u9-2022-d6a3ab347605.json")
     os.environ["IBM_NLU_CREDENTIALS"] = os.path.join("certs","ibm","nlu_watson.json")
+    os.environ["ES_CREDENTIALS"] =  os.path.join("certs","es","es.ini")
     
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

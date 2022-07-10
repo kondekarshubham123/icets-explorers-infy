@@ -11,6 +11,10 @@ from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_watson.natural_language_understanding_v1 \
     import Features, EmotionOptions
 
+# Elastic Search
+from elasticsearch import Elasticsearch, helpers
+import configparser
+
 PROJECT_ID = "gcms-oht28999u9-2022"
 
 CLASSIFY_TEXT = "classifyText"
@@ -239,6 +243,23 @@ class api_wrapper(object):
         args["conversation"][IDENTIFY_EMOTIONS]["agent_emotion"]    = indentify_emotions(" ".join(args["conversation"]["agent"]["transcript"]))
         args["conversation"][IDENTIFY_EMOTIONS]["customer_emotion"] = indentify_emotions(" ".join(args["conversation"]["customer"]["transcript"]))
         return args["conversation"]
+
+    
+    @staticmethod
+    def elastic_search_wrapper(args):
+        
+        config = configparser.ConfigParser()
+        config.read(os.environ["ES_CREDENTIALS"])
+
+        es = Elasticsearch(
+            cloud_id=config['ELASTIC']['cloud_id'],
+            http_auth=(config['ELASTIC']['user'], config['ELASTIC']['password'])
+        )
+        try:
+            es.index(index=uuid.uuid4(), document=args["conversation"])
+            return {}
+        except:
+            return {}
 
     
     @staticmethod
