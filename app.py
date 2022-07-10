@@ -20,7 +20,6 @@ api = Api(app,
 ns = api.namespace('Google NLP APIs',path="/api")
 ng = api.namespace("Dialogflow",path="/api")
 nw = api.namespace("IBM Watson",path="/api")
-np = api.namespace("Call Analytics",path="/api")
 
 parser = reqparse.RequestParser()
 parser.add_argument('conversation', type=lambda x:json.loads(x), required=True,
@@ -29,8 +28,8 @@ parser.add_argument('language', type=str,default=DEFAULTLANGUAGE, help='sentence
 
 
 nwparser = reqparse.RequestParser()
-nwparser.add_argument('sentence', type=str, required=True,
-                    help='sentence cannot be blank')
+nwparser.add_argument('conversation', type=lambda x:json.loads(x), required=True,
+                    help='conversation cannot be blank')
 nwparser.add_argument('target', type=lambda x:x.split(","), help='target keyword separated by comma')
 
 

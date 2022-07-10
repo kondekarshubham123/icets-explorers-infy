@@ -61,17 +61,12 @@ class api_wrapper(object):
 
             response = client.analyze_sentiment(
                 request={'document': document, 'encoding_type': encoding_type})
-            
-            response_body = {"sentences": {}}
-
-            for sentence in response.sentences:
-                if sentence.sentiment:
-                    response_body["sentences"][sentence.text.content] = find_sentiment(sentence.sentiment.score)
-
-            return response_body
+            return find_sentiment(response.document_sentiment.score)
 
         args["conversation"][SENTIMENT_ANALYSIS]["agent_sentiment"] = find_sentiment_score(" ".join(args["conversation"]["agent"]["transcript"]),language)
         args["conversation"][SENTIMENT_ANALYSIS]["client_sentiment"] = find_sentiment_score(" ".join(args["conversation"]["customer"]["transcript"]),language)
+        args["conversation"][SENTIMENT_ANALYSIS]["both_sentiment"] = find_sentiment_score(" ".join(args["conversation"]["customer"]["transcript"] + args["conversation"]["customer"]["transcript"]),language)
+        
         return args["conversation"]
     
     @staticmethod
@@ -221,20 +216,30 @@ class api_wrapper(object):
     @staticmethod
     def indentify_emotions_wrapper(args):
 
+        # Indentify Emotion Configuration
+
+
         key = json.load(open(os.environ["IBM_NLU_CREDENTIALS"]))
         authenticator = IAMAuthenticator(key["apikey"])
         natural_language_understanding = NaturalLanguageUnderstandingV1(
             version='2022-04-07',
             authenticator=authenticator
         )
-
         natural_language_understanding.set_service_url(key["url"])
 
-        response_body = {IDENTIFY_EMOTIONS :natural_language_understanding.analyze(
-            text=args["sentence"],
-            features=Features(emotion=EmotionOptions(targets=args["target"]))).get_result()}
+        args["conversation"][IDENTIFY_EMOTIONS] = {}
 
-        return response_body
+        def indentify_emotions(transcript):
+            emotions = natural_language_understanding.analyze(
+                text=transcript,
+                features=Features(emotion=EmotionOptions(targets=args["target"]))).get_result()
+            
+            return sorted(emotions["emotion"]["document"]["emotion"].items(),key=lambda x:x[1])[-1][0]
+
+        args["conversation"][IDENTIFY_EMOTIONS]["agent_emotion"]    = indentify_emotions(" ".join(args["conversation"]["agent"]["transcript"]))
+        args["conversation"][IDENTIFY_EMOTIONS]["customer_emotion"] = indentify_emotions(" ".join(args["conversation"]["customer"]["transcript"]))
+        return args["conversation"]
+
     
     @staticmethod
     def knative_enventing_wrapper(response_body):
