@@ -23,13 +23,13 @@ nw = api.namespace("IBM Watson",path="/api")
 np = api.namespace("Call Analytics",path="/api")
 
 parser = reqparse.RequestParser()
-parser.add_argument('Sentence', type=str, required=True,
+parser.add_argument('sentence', type=str, required=True,
                     help='sentence cannot be blank')
 parser.add_argument('language', type=str,default=DEFAULTLANGUAGE, help='sentence language')
 
 
 nwparser = reqparse.RequestParser()
-nwparser.add_argument('Sentence', type=str, required=True,
+nwparser.add_argument('sentence', type=str, required=True,
                     help='sentence cannot be blank')
 nwparser.add_argument('target', type=lambda x:x.split(","), help='target keyword separated by comma')
 
@@ -112,21 +112,10 @@ class identifyEmotions(Resource):
 
         return response
 
-@np.route('/callAnalytics')
-@np.expect(npparser)
-class CallAnalytics(Resource):
-    def post(self):
-        
-        args = npparser.parse_args()
-        
-        response_body = api_wrapper.call_analytics_wrapper(args)
-        response = api_wrapper.knative_enventing_wrapper(response_body)
-
-        return response
 
 if __name__ == "__main__":
     
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join("certs","gcp","gcms-oht28999u9-2022-d6a3ab347605.json")
     os.environ["IBM_NLU_CREDENTIALS"] = os.path.join("certs","ibm","nlu_watson.json")
     
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

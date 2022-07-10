@@ -13,11 +13,12 @@ from ibm_watson.natural_language_understanding_v1 \
 
 PROJECT_ID = "gcms-oht28999u9-2022"
 
-CLASSIFY_TEXT = "Classify Text"
-ANALYZE_ENTITY_SENTIMENT = "Analyze Entity Sentiment"
-SENTIMENT_ANALYSIS = "Sentiment Analysis"
-ENTITY_ANALYSIS = "Entity Analysis"
-IDENTIFY_INTENT = "Identify Intent"
+CLASSIFY_TEXT = "classifyText"
+ANALYZE_ENTITY_SENTIMENT = "analyzeEntitySentiment"
+SENTIMENT_ANALYSIS = "sentimentAnalysis"
+ENTITY_ANALYSIS = "entityAnalysis"
+IDENTIFY_INTENT = "identifyIntent"
+IDENTIFY_EMOTIONS = "identifyEmotions"
 
 CE_SOURCE = "knative/eventing/samples/hello-world"
 CE_TYPE = "dev.knative.samples.hifromknative"
@@ -33,7 +34,7 @@ class api_wrapper(object):
         # For list of supported languages:
         # https://cloud.google.com/natural-language/docs/languages
         language = args['language'] or None
-        text_content = args['Sentence']
+        text_content = args['sentence']
 
         document = {"content": text_content,
                     "type_": type_, "language": language}
@@ -60,7 +61,7 @@ class api_wrapper(object):
         # For list of supported languages:
         # https://cloud.google.com/natural-language/docs/languages
         language = args['language']
-        text_content = args['Sentence']
+        text_content = args['sentence']
 
         document = {"content": text_content,
                     "type_": type_, "language": language}
@@ -75,7 +76,7 @@ class api_wrapper(object):
 
         for entity in response.entities:
             response_body[ENTITY_ANALYSIS][text_content] = {
-                "name": entity.name, "Salience score": entity.salience, "type_": entity.type_}
+                "name": entity.name, "salienceScore": entity.salience, "type_": entity.type_}
             mentions = {}
             for mention in entity.mentions:
                 mentions[mention.text.content] = {
@@ -93,7 +94,7 @@ class api_wrapper(object):
         # For list of supported languages:
         # https://cloud.google.com/natural-language/docs/languages
         language = args['language']
-        text_content = args['Sentence']
+        text_content = args['sentence']
 
         document = {"content": text_content,
                     "type_": type_, "language": language}
@@ -108,8 +109,8 @@ class api_wrapper(object):
         
         for category in response.categories:
             response_body[CLASSIFY_TEXT][text_content] = {
-                "Category name": category.name,
-                "Confidence": category.confidence
+                "categoryName": category.name,
+                "confidence": category.confidence
             }
         
         return response_body
@@ -122,7 +123,7 @@ class api_wrapper(object):
         # For list of supported languages:
         # https://cloud.google.com/natural-language/docs/languages
         language = args['language']
-        text_content = args['Sentence']
+        text_content = args['sentence']
 
         document = {"content": text_content,
                     "type_": type_, "language": language}
@@ -134,18 +135,18 @@ class api_wrapper(object):
         
         for entity in response.entities:
             response_body[ANALYZE_ENTITY_SENTIMENT][text_content] = {
-                "Representative name": entity.name,
-                "Entity type": language_v1.Entity.Type(entity.type_).name,
-                "Salience score": entity.salience,
-                "Sentiment": {
-                    "Magnitude": entity.sentiment.magnitude,
-                    "Score": entity.sentiment.score
+                "representativeName": entity.name,
+                "entityType": language_v1.Entity.Type(entity.type_).name,
+                "salienceScore": entity.salience,
+                "sentiment": {
+                    "magnitude": entity.sentiment.magnitude,
+                    "score": entity.sentiment.score
                 },
                 "metadata": {
                     metadata_name: metadata_value for metadata_name, metadata_value in entity.metadata.items()
                 },
                 "mentions": {
-                    "Mention text": mention.text.content for mention in entity.mentions
+                    "mentionText": mention.text.content for mention in entity.mentions
                 },
                 "language": response.language
             }
@@ -154,7 +155,7 @@ class api_wrapper(object):
 
     @staticmethod
     def identify_intent_wrapper(args):
-        text = args['Sentence']
+        text = args['sentence']
         language_code = args['language']
         
         project_id = PROJECT_ID
@@ -173,10 +174,10 @@ class api_wrapper(object):
 
         response_body = {
             IDENTIFY_INTENT: {
-                "Query text":response.query_result.query_text,
-                "Detected intent":response.query_result.intent.display_name,
+                "queryText":response.query_result.query_text,
+                "detectedIntent":response.query_result.intent.display_name,
                 "confidence":response.query_result.intent_detection_confidence,
-                "Fulfillment text":response.query_result.fulfillment_text
+                "fulfillmentText":response.query_result.fulfillment_text
             }
         }
 
@@ -194,16 +195,12 @@ class api_wrapper(object):
 
         natural_language_understanding.set_service_url(key["url"])
 
-        response = natural_language_understanding.analyze(
-            text=args["Sentence"],
-            features=Features(emotion=EmotionOptions(targets=args["target"]))).get_result()
+        response_body = {IDENTIFY_EMOTIONS :natural_language_understanding.analyze(
+            text=args["sentence"],
+            features=Features(emotion=EmotionOptions(targets=args["target"]))).get_result()}
 
-        return response
+        return response_body
     
-    @staticmethod
-    def call_analytics_wrapper(args):
-        return args
-
     @staticmethod
     def knative_enventing_wrapper(response_body):
         response = make_response(response_body)
