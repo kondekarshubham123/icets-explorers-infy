@@ -29,9 +29,9 @@ class api_wrapper(object):
     def analyse_sentiment_wrapper(args):
 
         ## Sentiment Score Configuration
-        NEGATIVE = lambda x: (-1 <= x < - 0.5)
+        NEGATIVE = lambda x: (x < -0.5)
         NEUTRAL = lambda x: (-0.5 <= x < 0.5)
-        POSITIVE = lambda x: (0.5 <= x <= 1)
+        POSITIVE = lambda x: (0.5 <= x)
 
         client = language_v1.LanguageServiceClient()
         type_ = language_v1.Document.Type.PLAIN_TEXT
@@ -42,14 +42,13 @@ class api_wrapper(object):
 
         args["conversation"][SENTIMENT_ANALYSIS] = {}
 
-        def find_sentiment(score_dict):
-            for text,val in score_dict.items():
-                if NEGATIVE(val["score"]):
-                    return "NEGATIVE"
-                if POSITIVE(val["score"]):
-                    return "POSITIVE"
-                if NEUTRAL(val["score"]):
-                    return "NEUTRAL"
+        def find_sentiment(score):
+            if NEGATIVE(score):
+                return "NEGATIVE"
+            if POSITIVE(score):
+                return "POSITIVE"
+            if NEUTRAL(score):
+                return "NEUTRAL"
             return None
 
         def find_sentiment_score(text_content,language):
@@ -62,12 +61,14 @@ class api_wrapper(object):
 
             response = client.analyze_sentiment(
                 request={'document': document, 'encoding_type': encoding_type})
+            
+            response_body = {"sentences": {}}
 
-            response_body = {}
             for sentence in response.sentences:
-                response_body[text_content] = {
-                    "magnitude": sentence.sentiment.magnitude, "score": sentence.sentiment.score}
-            return find_sentiment(response_body)
+                if sentence.sentiment:
+                    response_body["sentences"][sentence.text.content] = find_sentiment(sentence.sentiment.score)
+
+            return response_body
 
         args["conversation"][SENTIMENT_ANALYSIS]["agent_sentiment"] = find_sentiment_score(" ".join(args["conversation"]["agent"]["transcript"]),language)
         args["conversation"][SENTIMENT_ANALYSIS]["client_sentiment"] = find_sentiment_score(" ".join(args["conversation"]["customer"]["transcript"]),language)
@@ -109,32 +110,45 @@ class api_wrapper(object):
     
     @staticmethod
     def classify_text_wrapper(args):
+
+        # Classify Text Configuration
+        ERROR_MSG = "Data is not enogh to detect topic"
+        MIN_CONFIDANCE_SCORE = lambda x: x >= 0.4
+
         client = language_v1.LanguageServiceClient()
         type_ = language_v1.Document.Type.PLAIN_TEXT
 
         # For list of supported languages:
         # https://cloud.google.com/natural-language/docs/languages
         language = args['language']
-        text_content = args['sentence']
+        args["conversation"][CLASSIFY_TEXT] = {}
 
-        document = {"content": text_content,
-                    "type_": type_, "language": language}
 
-        try:
-            response = client.classify_text(
-                request={'document': document})
-        except AttributeError:
-            return {"ERROR": "Please give a valid paragraph"}
+        def classify_text(text_content):
 
-        response_body = {CLASSIFY_TEXT: {}}
+            document = {"content": text_content,
+                        "type_": type_, "language": language}
+
+            try:
+                response = client.classify_text(
+                    request={'document': document})
+            except AttributeError:
+                return ERROR_MSG
+
+            categories = []
+            for category in response.categories:
+                if MIN_CONFIDANCE_SCORE(category.confidence):
+                    categories.append(category.name)
+            
+            if categories:
+                return categories
+            else:
+                return ERROR_MSG
+
         
-        for category in response.categories:
-            response_body[CLASSIFY_TEXT][text_content] = {
-                "categoryName": category.name,
-                "confidence": category.confidence
-            }
+        args["conversation"][CLASSIFY_TEXT]["categoryName"] = classify_text(" ".join(args["conversation"]["agent"]["transcript"] + args["conversation"]["customer"]["transcript"]))
         
-        return response_body
+        return args["conversation"]
         
     @staticmethod
     def analyse_entity_sentiment_wrapper(args):
