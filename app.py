@@ -23,7 +23,7 @@ nw = api.namespace("IBM Watson",path="/api")
 np = api.namespace("Call Analytics",path="/api")
 
 parser = reqparse.RequestParser()
-parser.add_argument('sentence', type=str, required=True,
+parser.add_argument('conversation', type=lambda x:json.loads(x), required=True,
                     help='sentence cannot be blank')
 parser.add_argument('language', type=str,default=DEFAULTLANGUAGE, help='sentence language')
 
@@ -33,10 +33,6 @@ nwparser.add_argument('sentence', type=str, required=True,
                     help='sentence cannot be blank')
 nwparser.add_argument('target', type=lambda x:x.split(","), help='target keyword separated by comma')
 
-
-npparser = reqparse.RequestParser()
-npparser.add_argument('call_transcript', type=lambda x: json.loads(x), required=True,
-                    help='Call transcript cannot be blank')
 
 @ns.route('/analyseSentiment')
 @ns.expect(parser)
@@ -48,7 +44,7 @@ class AnalyseSentiment(Resource):
         response_body = api_wrapper.analyse_sentiment_wrapper(args)
         response = api_wrapper.knative_enventing_wrapper(response_body)
         
-        return response 
+        return response
 
 
 @ns.route('/analyseEntities')

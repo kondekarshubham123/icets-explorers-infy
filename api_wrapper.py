@@ -28,29 +28,50 @@ class api_wrapper(object):
     @staticmethod
     def analyse_sentiment_wrapper(args):
 
+        ## Sentiment Score Configuration
+        NEGATIVE = lambda x: (-1 <= x < - 0.5)
+        NEUTRAL = lambda x: (-0.5 <= x < 0.5)
+        POSITIVE = lambda x: (0.5 <= x <= 1)
+
         client = language_v1.LanguageServiceClient()
         type_ = language_v1.Document.Type.PLAIN_TEXT
 
         # For list of supported languages:
         # https://cloud.google.com/natural-language/docs/languages
-        language = args['language'] or None
-        text_content = args['sentence']
+        language = args['language']
 
-        document = {"content": text_content,
-                    "type_": type_, "language": language}
+        args["conversation"][SENTIMENT_ANALYSIS] = {}
 
-        # Available values: NONE, UTF8, UTF16, UTF32
-        encoding_type = language_v1.EncodingType.UTF8
+        def find_sentiment(score_dict):
+            for text,val in score_dict.items():
+                if NEGATIVE(val["score"]):
+                    return "NEGATIVE"
+                if POSITIVE(val["score"]):
+                    return "POSITIVE"
+                if NEUTRAL(val["score"]):
+                    return "NEUTRAL"
+            return None
 
-        response = client.analyze_sentiment(
-            request={'document': document, 'encoding_type': encoding_type})
+        def find_sentiment_score(text_content,language):
 
-        response_body = {SENTIMENT_ANALYSIS: {}}
-        for sentence in response.sentences:
-            response_body[SENTIMENT_ANALYSIS][text_content] = {
-                "magnitude": sentence.sentiment.magnitude, "score": sentence.sentiment.score}
+            document = {"content": text_content,
+                        "type_": type_, "language": language}
 
-        return response_body 
+            # Available values: NONE, UTF8, UTF16, UTF32
+            encoding_type = language_v1.EncodingType.UTF8
+
+            response = client.analyze_sentiment(
+                request={'document': document, 'encoding_type': encoding_type})
+
+            response_body = {}
+            for sentence in response.sentences:
+                response_body[text_content] = {
+                    "magnitude": sentence.sentiment.magnitude, "score": sentence.sentiment.score}
+            return find_sentiment(response_body)
+
+        args["conversation"][SENTIMENT_ANALYSIS]["agent_sentiment"] = find_sentiment_score(" ".join(args["conversation"]["agent"]["transcript"]),language)
+        args["conversation"][SENTIMENT_ANALYSIS]["client_sentiment"] = find_sentiment_score(" ".join(args["conversation"]["customer"]["transcript"]),language)
+        return args["conversation"]
     
     @staticmethod
     def analyse_entities_wrapper(args):
