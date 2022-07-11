@@ -262,7 +262,7 @@ class api_wrapper(object):
 
     
     @staticmethod
-    def knative_enventing_wrapper(response_body,next_process):
+    def knative_enventing_wrapper(response_body,next_process=""):
         response = make_response(response_body)
         response.headers["Ce-Id"] = str(uuid.uuid4())
         response.headers["Ce-specversion"] = "0.3"

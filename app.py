@@ -28,6 +28,12 @@ parser.add_argument('conversation', type=lambda x:json.loads(x), required=True,
 parser.add_argument('language', type=str,default=DEFAULTLANGUAGE, help='sentence language')
 
 
+ngparser = reqparse.RequestParser()
+ngparser.add_argument("sentence", type=str, required=True,
+                    help='sentence cannot be blank')
+ngparser.add_argument('language', type=str,default=DEFAULTLANGUAGE, help='sentence language')
+
+
 nwparser = reqparse.RequestParser()
 nwparser.add_argument('conversation', type=lambda x:json.loads(x), required=True,
                     help='conversation cannot be blank')
@@ -89,11 +95,11 @@ class AnalyseEntitySentiment(Resource):
 
 
 @ng.route('/identifyIntent')
-@ng.expect(parser)
+@ng.expect(ngparser)
 class IdentifyIntent(Resource):
     def post(self):
 
-        args = parser.parse_args()
+        args = ngparser.parse_args()
 
         response_body = api_wrapper.identify_intent_wrapper(args)
         response = api_wrapper.knative_enventing_wrapper(response_body)
