@@ -215,7 +215,7 @@ class api_wrapper(object):
             }
         }
 
-        return response_body
+        return response_body[IDENTIFY_INTENT]
     
     @staticmethod
     def indentify_emotions_wrapper(args):
@@ -255,10 +255,11 @@ class api_wrapper(object):
 
         es = Elasticsearch(url)
         try:
-            print(es.index(index=uuid.uuid4(), document=args["conversation"]))
-            return {"data pushed":"1"}
+            data = es.index(index="icets-explorers", document=args["conversation"])
+            data = dict(data)
+            return data
         except:
-            return {"data not pushed":"0"}
+            return {"ERROR":"Data not pushed"}
 
     
     @staticmethod
