@@ -45,7 +45,7 @@ class AnalyseSentiment(Resource):
         args = parser.parse_args()
 
         response_body = api_wrapper.analyse_sentiment_wrapper(args)
-        response = api_wrapper.knative_enventing_wrapper(response_body)
+        response = api_wrapper.knative_enventing_wrapper(response_body,"classify_text")
         
         return response
 
@@ -71,7 +71,7 @@ class ClassifyText(Resource):
         args = parser.parse_args()
         
         response_body = api_wrapper.classify_text_wrapper(args)
-        response = api_wrapper.knative_enventing_wrapper(response_body)
+        response = api_wrapper.knative_enventing_wrapper(response_body,"identify_emotion")
         
         return response
 
@@ -107,7 +107,7 @@ class identifyEmotions(Resource):
         args = nwparser.parse_args()
 
         response_body = api_wrapper.indentify_emotions_wrapper(args)
-        response = api_wrapper.knative_enventing_wrapper(response_body)
+        response = api_wrapper.knative_enventing_wrapper(response_body,"elasticsearch")
 
         return response
 
@@ -118,7 +118,7 @@ class elasticSearchCreate(Resource):
         args = nwparser.parse_args()
 
         response_body = api_wrapper.elastic_search_wrapper(args)
-        response = api_wrapper.knative_enventing_wrapper(response_body)
+        response = api_wrapper.knative_enventing_wrapper(response_body,"completed")
 
         return response
 

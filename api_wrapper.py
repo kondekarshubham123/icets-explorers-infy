@@ -25,7 +25,7 @@ IDENTIFY_INTENT = "identifyIntent"
 IDENTIFY_EMOTIONS = "identifyEmotions"
 
 CE_SOURCE = "knative/eventing/samples/hello-world"
-CE_TYPE = "dev.knative.samples.hifromknative"
+CE_TYPE = "dev.knative."
 
 class api_wrapper(object):
     
@@ -251,24 +251,23 @@ class api_wrapper(object):
         config = configparser.ConfigParser()
         config.read(os.environ["ES_CREDENTIALS"])
 
-        es = Elasticsearch(
-            cloud_id=config['ELASTIC']['cloud_id'],
-            http_auth=(config['ELASTIC']['user'], config['ELASTIC']['password'])
-        )
+        url = config["ELASTIC"]["cloud_id"]
+
+        es = Elasticsearch(url)
         try:
-            es.index(index=uuid.uuid4(), document=args["conversation"])
-            return {}
+            print(es.index(index=uuid.uuid4(), document=args["conversation"]))
+            return {"data pushed":"1"}
         except:
-            return {}
+            return {"data not pushed":"0"}
 
     
     @staticmethod
-    def knative_enventing_wrapper(response_body):
+    def knative_enventing_wrapper(response_body,next_process):
         response = make_response(response_body)
         response.headers["Ce-Id"] = str(uuid.uuid4())
         response.headers["Ce-specversion"] = "0.3"
         response.headers["Ce-Source"] = CE_SOURCE
-        response.headers["Ce-Type"] = CE_TYPE
+        response.headers["Ce-Type"] = CE_TYPE+f"{next_process}"
         return response
 
 
